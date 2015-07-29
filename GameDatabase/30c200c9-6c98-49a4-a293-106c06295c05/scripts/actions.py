@@ -139,6 +139,35 @@ def scoop(group, x = 0, y = 0):
 	
 	notify("{} scoops their side of the table.".format(me))
 
+def setup(group, x = 0, y = 0):
+	mute()
+	var = me.getGlobalVariable("setupOk")
+	if var == "1":
+		notify("You already did your Setup")
+		return
+	if len(me.hand) == 0:
+		notify("You need to load a deck first") 
+		return
+	var="1"
+	me.setGlobalVariable("setupOk", var)
+	notify("**{} has started setup, please wait**".format(me))
+	checkdeck(me.deck)
+	for c in me.hand: 
+		if c.Type == "Faction":
+			if me.hasInvertedTable(): 
+				c.moveToTable(300,-100)			
+			else:
+				c.moveToTable(-300,0)
+		if c.Type == "Agenda":
+			if me.hasInvertedTable(): 
+				c.moveToTable(220,-100)			
+			else:
+				c.moveToTable(-220,0)
+	me.deck.shuffle()
+	for card in me.deck.top(7):
+		card.moveTo(me.hand)
+	notify("**{} is ready**".format(me))
+
 #---------------------------------------------------------------------------
 # Table card actions
 #---------------------------------------------------------------------------
@@ -182,6 +211,7 @@ def addGold(card, x = 0, y = 0):
 	mute()
 	notify("{} adds a Gold to {}.".format(me, card))
 	card.markers[Gold] += 1
+	me.counters['Gold'].value += 1
     
 def addPower(card, x = 0, y = 0):
     mute()
@@ -209,6 +239,7 @@ def subGold(card, x = 0, y = 0):
     mute()
     notify("{} subtracts a Gold to {}.".format(me, card))
     card.markers[Gold] -= 1
+    me.counters['Gold'].value -= 1
     
 def subPower(card, x = 0, y = 0):
     mute()
@@ -251,6 +282,19 @@ def cancelHighlight (card, x = 0, y = 0):
 	mute()
 	card.highlight = None
 	card.target(False)
+
+def countincome(card, x=0, y=0):
+	mute()
+	if not confirm("Is this your revealing plot?"): return
+	if card.Type == "Plot" and card.controller == me:
+		for incomecard in table:
+			if incomecard.goldincome and incomecard.controller == me:
+				me.counters['Gold'].value += int(incomecard.goldincome)
+		me.counters['Gold'].value += int(card.plotgoldincome)
+		card.markers[Gold] += me.counters['Gold'].value
+		notify("{} counts income {} gold.".format(me,me.counters['Gold'].value))
+	else:
+		return
 
 #---------------------------
 #movement actions
@@ -302,9 +346,122 @@ def mulligan(group):
 		card.moveTo(me.hand)
 	notify("{} mulligans and draws {} new cards.".format(me, draw))
 
+def play(card, x=0, y=0):
+	mute()
+	if card.cost == "" : 
+		whisper("You can't play this card")
+		return
+	if card.Cost == "X": cost=askInteger("How much do you want to pay to play {} ? ".format(card.name),0)
+	else : cost=int(card.Cost)
+	reduc=askInteger("Reduce Cost by ?",0)
+	if reduc == None or cost == None: return
+	if reduc>cost: reduc=cost
+	cost-=reduc
+	if me.counters['Gold'].value < cost :
+		whisper("You don't have enough Gold to pay for {}.".format(card.name))
+		return		
+	if me.hasInvertedTable(): card.moveToTable(0,-288)
+	else : 	card.moveToTable(0,160)
+	notify("{} plays {} for {} Gold (Cost reduced by {}).".format(me,card,cost,reduc))
+	me.counters['Gold'].value -= cost
+	for incomecard in table:
+		if incomecard.controller == me and incomecard.markers[Gold] > 0:
+			incomecard.markers[Gold] -= cost
+
 #------------------------------------------------------------------------------
 # Pile Actions
 #------------------------------------------------------------------------------
+def checkdeck(group):
+	mute()
+	notify (" -> Checking deck of {} ...".format(me))
+
+	NeutralCount = 0
+	LannisterCount = 0
+	MartellCount = 0
+	NightCount =0
+	StarkCount=0
+	TargaryenCount=0
+	TyrellCount=0
+	BaratheonCount=0
+	GreyjoyCount=0
+	for card in group:
+		if card.faction=='Neutral.':
+			NeutralCount += 1
+		elif card.faction=='Lannister.':
+			LannisterCount += 1
+		elif card.faction=='Martell.':
+			MartellCount += 1
+		elif card.faction=="Night's Watch.":
+			NightCount += 1
+		elif card.faction=='Stark.':
+			StarkCount += 1
+		elif card.faction=='Targaryen.':
+			TargaryenCount += 1
+		elif card.faction=='Tyrell.':
+			TyrellCount += 1
+		elif card.faction=='Baratheon.':
+			BaratheonCount += 1
+		elif card.faction=='Greyjoy.':
+			GreyjoyCount += 1
+
+	for card in me.hand:
+		if card.ename == "Fealty":#效忠
+			if NeutralCount<10:
+					notify("Your Agenda is[{}]".format(card.ename))
+			else:
+					notify("Your Agenda is[{}],the number of Neutral cards in your deck is {},it's a wrong deck.".format(card.ename, NeutralCount, me))
+			return
+		elif card.ename == "Banner of the Lion":#金狮的旗帜
+			if LannisterCount<12:
+					notify("Your Agenda is[{}],the number of Lannister cards in your deck is {},it's a wrong deck.".format(card.ename, LannisterCount, me))
+			else:
+					notify("Your Agenda is[{}]".format(card.ename))
+			return
+		elif card.ename == "Banner of the Sun":#太阳的旗帜
+			if MartellCount<12:
+					notify("Your Agenda is[{}],the number of Martell cards in your deck is {},it's a wrong deck.".format(card.ename, MartellCount, me))
+			else:
+					notify("Your Agenda is[{}]".format(card.ename))
+			return
+		elif card.ename == "Banner of the Watch":#守夜人的旗帜
+			if NightCount<12:
+					notify("Your Agenda is[{}],the number of NightWatch cards in your deck is {},it's a wrong deck.".format(card.ename, NightCount, me))
+			else:
+					notify("Your Agenda is[{}]".format(card.ename))
+			return
+		elif card.ename == "Banner of the Wolf":#奔狼的旗帜
+			if StarkCount<12:
+					notify("Your Agenda is[{}],the number of Stark cards in your deck is {},it's a wrong deck.".format(card.ename, StarkCount, me))
+			else:
+					notify("Your Agenda is[{}]".format(card.ename))
+			return
+		elif card.ename == "Banner of the Dragon":#真龙的旗帜
+			if TargaryenCount<12:
+					notify("Your Agenda is[{}],the number of Targaryen cards in your deck is {},it's a wrong deck.".format(card.ename, TargaryenCount, me))
+			else:
+					notify("Your Agenda is[{}]".format(card.ename))
+			return
+		elif card.ename == "Banner of the Rose":#玫瑰的旗帜
+			if TyrellCount<12:
+					notify("Your Agenda is[{}],the number of Tyrell cards in your deck is {},it's a wrong deck.".format(card.ename, TyrellCount, me))
+			else:
+					notify("Your Agenda is[{}]".format(card.ename))
+			return
+		elif card.ename == "Banner of the Stag":#雄鹿的旗帜
+			if BaratheonCount<12:
+					notify("Your Agenda is[{}],the number of Baratheon cards in your deck is {},it's a wrong deck.".format(card.ename, BaratheonCount, me))
+			else:
+					notify("Your Agenda is[{}]".format(card.ename))
+			return
+		elif card.ename == "Banner of the Kraken":#海怪的旗帜
+			if GreyjoyCount<12:
+					notify("Your Agenda is[{}],the number of Grejoy cards in your deck is {},it's a wrong deck.".format(card.ename, GreyjoyCount, me))
+			else:
+					notify("Your Agenda is[{}]".format(card.ename))
+			return
+
+	notify("You have no Agenda or Your Agenda is not in your hand")
+
 
 def shuffle(group):
 	group.shuffle()
