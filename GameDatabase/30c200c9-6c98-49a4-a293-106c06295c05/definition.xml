@@ -106,7 +106,7 @@
 			<groupaction menu="Go-to: FFG's aGoT FAQ" execute="faqWebsite"/>
 		</groupactions>
 		<groupaction menu="Recalculate Power Totals" shortcut="CTRL+R" default="True" execute="recalcPower"/>
-					
+		<groupaction menu="Game setup" shortcut="" default="True" execute="setup"/>			
 		<cardaction  menu="Kneel/Stand" shortcut="F9" default="True" execute="kneel"/>
 		<cardaction  menu="Flip Card" shortcut="F8" execute="flipcard"/>		
 		<cardactions menu="Challenge Highlight">
@@ -139,15 +139,18 @@
 			<cardaction menu="Add Token Blue" shortcut="SHIFT+F7" execute="addBlueToken"/>
 			<cardaction menu="Sub Token Blue" shortcut="SHIFT+F8" execute="subBlueToken"/>
 		</cardactions>
+		<cardaction  menu="Count Income" execute="countincome"/>
 	</table>
 	
 	<player summary=" Power: {#Power} / Gold: {#Gold}">
+		<globalvariable name="setupOk" value="0" />
 		<counter name="Power" icon="counters/power.png"/>
 		<counter name="Gold" icon="counters/gold.png"/>					
 		<hand name="Hand" visibility="me" ordered="False" width="63" height="88" icon="groups/hand.png">            
 			<groupaction menu="Random Discard" shortcut="F12" execute="randomDiscard"/>
 			<groupaction menu="Random Discard Many" execute="discardMany"/>
 			<groupaction menu="Take a Mulligan" shortcut="F6" execute="mulligan"/>
+			<cardaction menu="Pay Gold to Marshal/Play/Ambush" execute="play" default="True"/>
 		</hand>
 		<group name="Deck" visibility="none" width="63" height="88" icon="groups/faction.png">
 			<groupaction menu="Shuffle" shortcut="CTRL+S" execute="shuffle"/>
