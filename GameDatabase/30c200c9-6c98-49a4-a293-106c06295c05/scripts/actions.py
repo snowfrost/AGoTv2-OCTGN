@@ -415,27 +415,27 @@ def setup(group, x = 0, y = 0):
 	notify("**{} is ready**".format(me))
 
 def endturn(group, x = 0, y = 0): 
-    count = 0
-    discAmount = None
-    mute()
-    if not confirm("Are you sure to end this turn?"): return
-    myCards = (card for card in table  #restore all cards
-            if card.controller == me)
-    for card in myCards:
-        if card.isFaceUp:
-            card.orientation &= ~Rot90
-            card.highlight = None
-    me.counters['Gold'].value = 0  #reset gold counters
-    goldcard = (card for card in table
-            if card.controller == me)
-    for card in goldcard: 
-        card.markers[Gold] = 0
-    getreserve(group)
-    if len(me.hand) > me.counters['Reserve'].value:  #check reserve
-        if discAmount == None: 
-            notify("The number of cards in {}'s hand is more than your reserve.You should discard {} cards.".format(me, len(me.hand)-me.counters['Reserve'].value))
-            discAmount = askInteger("Discard how many cards?", len(me.hand)-me.counters['Reserve'].value) 
-        if discAmount == None: return
+	count = 0
+	discAmount = None
+	mute()
+	if not confirm("Are you sure to end this turn?"): return
+	myCards = (card for card in table  #restore all cards
+			if card.controller == me)
+	for card in myCards:
+		if card.isFaceUp:
+			card.orientation &= ~Rot90
+			card.highlight = None
+	me.counters['Gold'].value = 0  #reset gold counters
+	goldcard = (card for card in table
+			if card.controller == me)
+	for card in goldcard: 
+		card.markers[Gold] = 0
+	getreserve(group)
+	if len(me.hand) > me.counters['Reserve'].value:  #check reserve
+		if discAmount == None: 
+			notify("The number of cards in {}'s hand is more than your reserve.You should discard {} cards.".format(me, len(me.hand)-me.counters['Reserve'].value))
+			discAmount = askInteger("Discard how many cards?", len(me.hand)-me.counters['Reserve'].value) 
+		if discAmount == None: return
 		for index in range(0,discAmount):
 			cardList = []
 			for c in me.hand:
@@ -446,20 +446,20 @@ def endturn(group, x = 0, y = 0):
 				notify("{} discard {}.".format(me, c.name))
 				count += 1
 			else:return
-    else:
-        notify("You can keep all of your cards in hand.")
-    for c in table: 
-        if c.Type == "Plot" and c.controller == me:
+	else:
+		notify("You can keep all of your cards in hand.")
+	for c in table: 
+		if c.Type == "Plot" and c.controller == me:
 			if len(me.piles['Plot Deck']) > 0:
 				c.moveTo(me.piles['Used Plot Pile'])
 			else:
 				shuffleToPlot(me.piles['Used Plot Pile'])
 				c.moveTo(me.piles['Used Plot Pile'])
-    me.counters['Reserve'].value = 0
-    me.counters['Initiative'].value = 0
-   	me.counters['Str'].value = 0
-    me.setGlobalVariable("turn", "0")
-    notify("{} is ready for a new turn.".format(me))
+	me.counters['Reserve'].value = 0
+	me.counters['Initiative'].value = 0
+	me.counters['Str'].value = 0
+	me.setGlobalVariable("turn", "0")
+	notify("{} is ready for a new turn.".format(me))
 
 def countincome(group, x=0, y=0):
     mute()
