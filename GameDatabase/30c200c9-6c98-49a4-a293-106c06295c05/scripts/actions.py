@@ -68,7 +68,7 @@ def cancelAllHighlight(group, x = 0, y = 0):
 def turnDone(group, x = 0, y = 0):
     mute()
     notify("**{} is done.**".format(me))
-    table.create("73a6655b-60b6-4080-b428-f4e0099e0f77",0,0)
+
 
 def restoreAll(group, x = 0, y = 0): 
     mute()
@@ -139,19 +139,6 @@ def scoop(group, x = 0, y = 0):
 # Table card actions
 #---------------------------------------------------------------------------
 
-    
-def cardLookup(card, x = 0, y = 0):
-    mute()
-    
-    if card.isFaceUp:
-        webSite = ""
-        webSite += "http://www.cardgamedb.com/index.php/GoT/gotcardsearch.html?ft=0"
-        webSite += "&name={}".format(card.name)
-        webSite += "&type={}".format(card.Type)
-        openUrl("{}".format(webSite))
-    else:
-        whisper("Card must be face up to use this feature.")
-    
 def kneel(card, x = 0, y = 0):
     mute()
     card.orientation ^= Rot90
@@ -391,35 +378,41 @@ def moveOneRandom(group):
 #---------------------------------------------------------------------------
 
 def setup(group, x = 0, y = 0):
-    mute()
-    if not confirm("Confirm to setup?"): return
-    var = me.getGlobalVariable("setupOk")
-    if var == "1":
-        notify("You already did your Setup")
-        return
-    if len(me.hand) == 0:
-        notify("You need to load a deck first") 
-        return
-    var="1"
-    me.setGlobalVariable("setupOk", var)
-    notify("**{} has started setup, please wait**".format(me))
-    checkdeck(me.deck)
-    for c in me.hand: 
-        if c.Type == "Faction":
-            if me.hasInvertedTable(): 
-                c.moveToTable(300,-100)         
-            else:
-                c.moveToTable(-280,0)
-        if c.Type == "Agenda":
-            if me.hasInvertedTable(): 
-                c.moveToTable(220,-100)         
-            else:
-                c.moveToTable(-200,0)
-    me.deck.shuffle()
-    for card in me.deck.top(7):
-        card.moveTo(me.hand)
-    table.create("73a6655b-60b6-4080-b428-f4e0099e0f77",0,0)
-    notify("**{} is ready**".format(me))
+	mute()
+	if not confirm("Confirm to setup?"): return
+	var = me.getGlobalVariable("setupOk")
+	if var == "1":
+		notify("You already did your Setup")
+		return
+	if len(me.hand) == 0:
+		notify("You need to load a deck first") 
+		return
+	var="1"
+	me.setGlobalVariable("setupOk", var)
+	notify("**{} has started setup, please wait**".format(me))
+	checkdeck(me.deck)
+	for c in me.hand: 
+		if c.Type == "Faction":
+			if me.hasInvertedTable(): 
+				c.moveToTable(300,-100)			
+			else:
+				c.moveToTable(-280,0)
+		if c.Type == "Agenda":
+			if me.hasInvertedTable(): 
+				c.moveToTable(220,-100)			
+			else:
+				c.moveToTable(-200,0)
+	me.deck.shuffle()
+	for card in me.deck.top(7):
+		card.moveTo(me.hand)
+	if "73a6655b-60b6-4080-b428-f4e0099e0f77" not in table:
+		table.create("73a6655b-60b6-4080-b428-f4e0099e0f77",-360,0)
+		setGlobalVariable("firstplay", "False")
+	if me.hasInvertedTable(): 
+		table.create("656f69c4-c506-4014-932b-9dff4422f09e",300,-200)			
+	else:
+		table.create("656f69c4-c506-4014-932b-9dff4422f09e",-280,100)
+	notify("**{} is ready**".format(me))
 
 def endturn(group, x = 0, y = 0): 
     count = 0
@@ -441,21 +434,30 @@ def endturn(group, x = 0, y = 0):
     if len(me.hand) > me.counters['Reserve'].value:  #check reserve
         if discAmount == None: 
             notify("The number of cards in {}'s hand is more than your reserve.You should discard {} cards.".format(me, len(me.hand)-me.counters['Reserve'].value))
-            discAmount = askInteger("Randomly discard how many cards?", len(me.hand)-me.counters['Reserve'].value) 
+            discAmount = askInteger("Discard how many cards?", len(me.hand)-me.counters['Reserve'].value) 
         if discAmount == None: return
-        for index in range(0,discAmount):
-            card = me.hand.random()
-            if card == None: break
-            card.moveTo(me.piles['Discard pile'])
-            count += 1
-            notify("{} randomly discards {}.".format(me,card))
+		for index in range(0,discAmount):
+			cardList = []
+			for c in me.hand:
+				cardList.append(c)
+			c=askCard(cardList)
+			if c != None:
+				c.moveTo(me.piles['Discard pile'])
+				notify("{} discard {}.".format(me, c.name))
+				count += 1
+			else:return
     else:
         notify("You can keep all of your cards in hand.")
     for c in table: 
         if c.Type == "Plot" and c.controller == me:
-            c.moveTo(me.piles['Used Plot Pile'])
+			if len(me.piles['Plot Deck']) > 0:
+				c.moveTo(me.piles['Used Plot Pile'])
+			else:
+				shuffleToPlot(me.piles['Used Plot Pile'])
+				c.moveTo(me.piles['Used Plot Pile'])
     me.counters['Reserve'].value = 0
     me.counters['Initiative'].value = 0
+   	me.counters['Str'].value = 0
     me.setGlobalVariable("turn", "0")
     notify("{} is ready for a new turn.".format(me))
 
@@ -672,13 +674,37 @@ def challengeAnnounce(group, x=0, y=0):
         notify("{} has no challenge to initiate.".format(me))
     else:return
 
-#def chooseplot(group, x=0, y=0):
-#   mute()
-#   cardList = []
-#   for card in me.piles['Plot Deck']:
-#       cardList.append(card.name)
-#   choice = askChoice("Choose a card.",cardList)
-#   notify("****")
+def revealplot(group, x = 0, y = 0):
+	mute()
+	me.piles['Plot Deck'].addViewer(me)
+	list = []
+	for card in me.piles['Plot Deck']: list.append(card)
+	card=askCard(list)
+	if card != None:
+		if me.hasInvertedTable(): 
+			card.moveToTable(120,-80)
+		else:
+			card.moveToTable(-120,0)
+		notify("{} reveal {}.".format(me, card.name))
+		count = 0
+		for p in table:
+			if p.type == "Plot":
+				count += 1
+		if count == len(players):
+			if not confirm("Continue to decide who wins the initiative?"): return
+			fp(table)
+	else:
+		return
+
+def defaultAction(card, x = 0, y = 0):
+	mute()
+	# Default for Done button is playerDone
+	if card.Type == "Plot": 
+		countincome(table)
+	elif not card.isFaceUp: #Face down card - flip
+		flipcard(card, x, y)
+	else:
+		kneel(card, x, y)
 
 #------------------------------------------------------------------------------
 # New Pile Actions
@@ -812,3 +838,40 @@ def subGold(card, x = 0, y = 0):
     notify("{} subtracts a Gold to {}.".format(me, card))
     card.markers[Gold] -= 1
     me.counters['Gold'].value -= 1
+
+def remove(card, x = 0, y = 0):
+	mute()
+	card.delete()
+	if not confirm("Confirm to remove this card from game."): return
+	notify('{} remove {} from the game'.format(me, card.name))
+
+def cardLookup(card, x = 0, y = 0):
+	mute()
+	
+	if card.isFaceUp:
+		webSite = ""
+		webSite += "http://www.cardgamedb.com/index.php/agameofthrones2ndedition/a-game-of-thrones-2nd-edition-cards?&advanced=false&tx="
+		webSite += "{}".format(card.name)
+		webSite += "&txf=Name&or=name&vw=spoiler"
+		openUrl("{}".format(webSite))
+	else:
+		whisper("Card must be face up to use this feature.")
+
+def disc(card, x = 0, y = 0):
+	mute()
+	if card.type == "Plot":
+		card.moveTo(me.piles['Used Plot Pile'])
+		notify("{} move {} to used plot pile.".format(me, card.name))
+	elif card.type == "Faction" or card.type ==  "Agenda":
+		notify("You can't discard {} card.".format(card.type))
+	else:
+		card.moveTo(me.piles['Discard pile'])
+		notify("{} discard {}.".format(me, card.name))
+
+#------------------------------------------------------------------------------
+# New Events
+#------------------------------------------------------------------------------
+def on_load_deck(player, groups):
+	mute()
+	if player == me:
+		setup(table)
